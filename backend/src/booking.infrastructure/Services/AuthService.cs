@@ -7,17 +7,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using booking.core.Constants;
 using booking.core.DTOs;
+using booking.core.Interfaces;
 using booking.core.Models;
 using booking.infrastructure.Persistence;
 
 namespace booking.infrastructure.Services;
-
-public interface IAuthService
-{
-    Task<(bool ok, AuthResponse? data, string? code)> LoginAsync(string email, string password, CancellationToken ct);
-    Task<(bool ok, AuthResponse? data, string code, string? message)> RegisterAsync(string email, string password, string? userName, CancellationToken ct);
-
-}
 
 public class AuthService : IAuthService
 {
@@ -76,15 +70,8 @@ public class AuthService : IAuthService
     public async Task<(bool ok, AuthResponse? data, string code, string? message)> RegisterAsync(
         string email, string password, string? userName, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(email))
-            return (false, null, Codes.EmailRequired, "Email is required.");
-
-        if (string.IsNullOrWhiteSpace(password) || password.Length < 8
-            || !password.Any(char.IsUpper) || !password.Any(char.IsLower) || !password.Any(char.IsDigit))
-        {
-            return (false, null, Codes.PasswordWeak, "Password must be 8+ chars with upper, lower and digit.");
-        }
-
+        // Email/password format is already enforced by RegisterRequestValidator
+        // via FluentValidation auto-validation before this is reached.
         var exists = await _db.Users.AnyAsync(u => u.Email != null && u.Email.ToLower() == email.ToLower(), ct);
         if (exists)
             return (false, null, Codes.EmailAlreadyExists, "Email already registered.");

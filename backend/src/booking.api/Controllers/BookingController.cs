@@ -2,18 +2,20 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using booking.core.Constants;
 using booking.core.DTOs;
-using booking.infrastructure.Services;
+using booking.core.Interfaces;
 
 namespace booking.api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class BookingController : ControllerBase
 {
     private readonly IBookingService _svc;
     public BookingController(IBookingService svc) => _svc = svc;
 
     [HttpGet]
+    [Authorize(Policy = "Booking.Read")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         var (ok, data, code) = await _svc.GetAllAsync(ct);
@@ -21,6 +23,7 @@ public class BookingController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Policy = "Booking.Read")]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
         var (ok, data, code) = await _svc.GetByIdAsync(id, ct);
@@ -29,6 +32,7 @@ public class BookingController : ControllerBase
     }
 
     [HttpGet("Service")]
+    [Authorize(Policy = "Booking.Read")]
     public async Task<IActionResult> GetByServiceId(
         [FromQuery] int? serviceId,
         CancellationToken ct)
@@ -46,6 +50,7 @@ public class BookingController : ControllerBase
 
 
     [HttpPost]
+    [Authorize(Policy = "Booking.Create")]
     public async Task<IActionResult> Create([FromBody] BookingUpsertDto body, CancellationToken ct)
     {
         var (ok, id, code, message) = await _svc.CreateAsync(body, ct);
@@ -54,6 +59,7 @@ public class BookingController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "Booking.Update")]
     public async Task<IActionResult> Update(int id, [FromBody] BookingUpsertDto body, CancellationToken ct)
     {
         var (ok, code, message) = await _svc.UpdateAsync(id, body, ct);
@@ -63,6 +69,7 @@ public class BookingController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "Booking.Delete")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var (ok, code, message) = await _svc.DeleteAsync(id, ct);
@@ -72,16 +79,17 @@ public class BookingController : ControllerBase
     }
 
     [HttpPost("availability")]
+    [Authorize(Policy = "Booking.Read")]
     public async Task<IActionResult> GetAvailability([FromBody] Availability body, CancellationToken ct)
     {
         var (ok, data, message) = await _svc.GetAvailability(body, ct);
 
-        if (!ok || data is null)
+        if (!ok)
         {
-            return NotFound(new
+            return BadRequest(new
             {
-                code = Codes.NotFound,
-                message = message ?? "Availability not found."
+                code = Codes.InvalidInput,
+                message = message ?? "Invalid availability request."
             });
         }
 

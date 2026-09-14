@@ -1,21 +1,12 @@
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using booking.core.Constants;
 using booking.core.DTOs;
+using booking.core.Interfaces;
 using booking.core.Models;
 using booking.infrastructure.Persistence;
 
 namespace booking.infrastructure.Services;
-
-public interface IBookingService
-{
-    Task<(bool ok, List<BookingModel> data, string code)> GetAllAsync(CancellationToken ct);
-    Task<(bool ok, BookingModel? data, string code)> GetByIdAsync(int id, CancellationToken ct);
-    Task<(bool ok, List<BookingRow> data, string code)> GetByServiceIdAsync(int serviceId, CancellationToken ct);
-    Task<(bool ok, int id, string code, string? message)> CreateAsync(BookingUpsertDto dto, CancellationToken ct);
-    Task<(bool ok, string code, string? message)> UpdateAsync(int id, BookingUpsertDto dto, CancellationToken ct);
-    Task<(bool ok, string code, string? message)> DeleteAsync(int id, CancellationToken ct);
-    Task<(bool ok, List<AvailabilityTimes> data, string? message)> GetAvailability(Availability dto, CancellationToken ct);
-}
 
 public class BookingService : IBookingService
 {
@@ -74,12 +65,11 @@ public class BookingService : IBookingService
     {
         var s = new Booking
         {
-            Id = dto.id,
             ServiceDetailId = dto.serviceDetailId,
             EmployeeId = dto.employeeId,
             StartDatetime = dto.startDatetime,
             EndDatetime = dto.endDatetime,
-            CreatedAt = dto.createdAt
+            CreatedAt = DateTime.UtcNow
         };
 
         _db.Bookings.Add(s);
@@ -96,7 +86,6 @@ public class BookingService : IBookingService
         s.EmployeeId = dto.employeeId;
         s.StartDatetime = dto.startDatetime;
         s.EndDatetime = dto.endDatetime;
-        s.CreatedAt = dto.createdAt;
 
         await _db.SaveChangesAsync(ct);
         return (true, Codes.Ok, null);
@@ -114,13 +103,19 @@ public class BookingService : IBookingService
 
     public async Task<(bool ok, List<AvailabilityTimes> data, string? message)> GetAvailability(Availability dto, CancellationToken ct)
     {
-        string initialHour = "08:00";
-        string finalHour = "15:00";
+        if (!DateTime.TryParse(dto.date, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+            return (false, new List<AvailabilityTimes>(), "Invalid date format.");
+
+        if (!int.TryParse(dto.frequency, NumberStyles.Integer, CultureInfo.InvariantCulture, out var frequencyMinutes) || frequencyMinutes <= 0)
+            return (false, new List<AvailabilityTimes>(), "Invalid frequency; it must be a positive number of minutes.");
+
+        var initialHour = TimeSpan.Parse("08:00", CultureInfo.InvariantCulture);
+        var finalHour = TimeSpan.Parse("15:00", CultureInfo.InvariantCulture);
         var availabilityList = new List<AvailabilityTimes>();
 
-        var date = DateTime.Parse(dto.date).Date;
-        DateTime startTime = date.Add(TimeSpan.Parse(initialHour));
-        DateTime endTime = date.Add(TimeSpan.Parse(finalHour));
+        var date = parsedDate.Date;
+        DateTime startTime = date.Add(initialHour);
+        DateTime endTime = date.Add(finalHour);
 
         var dayStart = date.Date;
         var dayEnd = dayStart.AddDays(1);
@@ -134,7 +129,7 @@ public class BookingService : IBookingService
             )
             .ToListAsync(ct);
 
-        for (var time = startTime; time < endTime; time = time.AddMinutes(int.Parse(dto.frequency)))
+        for (var time = startTime; time < endTime; time = time.AddMinutes(frequencyMinutes))
         {
             var isAvailable = true;
 

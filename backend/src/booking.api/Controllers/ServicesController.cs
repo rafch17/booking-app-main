@@ -2,18 +2,20 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using booking.core.Constants;
 using booking.core.DTOs;
-using booking.infrastructure.Services;
+using booking.core.Interfaces;
 
 namespace booking.api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ServicesController : ControllerBase
 {
     private readonly IServicesService _svc;
     public ServicesController(IServicesService svc) => _svc = svc;
 
     [HttpGet]
+    [Authorize(Policy = "Service.Read")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         var (ok, data, code) = await _svc.GetAllAsync(ct);
@@ -21,6 +23,7 @@ public class ServicesController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Policy = "Service.Read")]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
         var (ok, data, code) = await _svc.GetByIdAsync(id, ct);
@@ -29,6 +32,7 @@ public class ServicesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "Service.Create")]
     public async Task<IActionResult> Create([FromBody] ServiceUpsertDto body, CancellationToken ct)
     {
         var (ok, id, code, message) = await _svc.CreateAsync(body, ct);
@@ -37,6 +41,7 @@ public class ServicesController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "Service.Update")]
     public async Task<IActionResult> Update(int id, [FromBody] ServiceUpsertDto body, CancellationToken ct)
     {
         var (ok, code, message) = await _svc.UpdateAsync(id, body, ct);
@@ -46,6 +51,7 @@ public class ServicesController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "Service.Delete")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var (ok, code, message) = await _svc.DeleteAsync(id, ct);

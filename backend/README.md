@@ -23,6 +23,23 @@ dotnet ef --version
 sqlite3 --version  # optional
 ```
 
+## Configuration secrets (required before first run)
+
+`appsettings.json` no longer contains the JWT signing key or the demo seed password —
+they must be provided locally via `dotnet user-secrets` (the `booking.api` project already
+has a `UserSecretsId` configured):
+
+```bash
+cd src/booking.api
+dotnet user-secrets set "Jwt:Key" "<a random string, at least 32 bytes>"
+```
+
+The app fails fast at startup with a clear error if `Jwt:Key` is missing or too short.
+
+The demo users seeded in Development (`admin@demo.com`, etc.) get their password from
+`Seed:DemoUserPassword`, already set in `appsettings.Development.json`. That seed only runs
+when `ASPNETCORE_ENVIRONMENT=Development` — it never runs in Production.
+
 ## Run (development)
 
 Run the API project directly:

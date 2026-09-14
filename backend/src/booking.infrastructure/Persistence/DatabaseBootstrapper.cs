@@ -8,7 +8,19 @@ namespace booking.infrastructure.Persistence;
 
 public static class DatabaseBootstrapper
 {
-    public static async Task InitAsync(AppDbContext db, string infraRootPath, CancellationToken ct = default)
+    private static readonly string[] AdminPermissions =
+    [
+        Permissions.Bookings.Read, Permissions.Bookings.Create, Permissions.Bookings.Update, Permissions.Bookings.Delete,
+        Permissions.Offices.Read, Permissions.Offices.Create, Permissions.Offices.Update, Permissions.Offices.Delete,
+        Permissions.Services.Read, Permissions.Services.Create, Permissions.Services.Update, Permissions.Services.Delete,
+    ];
+
+    public static async Task InitAsync(
+        AppDbContext db,
+        string infraRootPath,
+        bool seedDemoData,
+        string? demoUserPassword,
+        CancellationToken ct = default)
     {
         // 1) ¿Existe la tabla Users?
         bool hasUsersTable;
@@ -41,14 +53,46 @@ public static class DatabaseBootstrapper
             await tx.CommitAsync(ct);
         }
 
-        // 3) Seed idempotente
-        await SeedAsync(db, ct);
+        // 3) Roles y permisos: siempre necesarios para que las policies de autorización funcionen.
+        await SeedRolesAndPermissionsAsync(db, ct);
+
+        // 4) Datos de demostración (usuarios, oficinas, servicios, bookings de ejemplo):
+        //    solo en entornos de desarrollo, nunca en producción.
+        if (seedDemoData)
+        {
+            if (string.IsNullOrWhiteSpace(demoUserPassword))
+                throw new InvalidOperationException(
+                    "Seed:DemoUserPassword must be configured (appsettings.Development.json or user-secrets) to seed demo data.");
+
+            await SeedDemoDataAsync(db, demoUserPassword, ct);
+        }
     }
 
     private static IEnumerable<string> SplitSqlStatements(string sql) =>
         sql.Replace("\r", "").Split(";\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-    private static async Task SeedAsync(AppDbContext db, CancellationToken ct)
+    private static async Task SeedRolesAndPermissionsAsync(AppDbContext db, CancellationToken ct)
+    {
+        var role = await db.Roles.AsNoTracking().FirstOrDefaultAsync(r => r.Id == "r_admin", ct);
+        if (role is null)
+        {
+            role = new Role { Id = "r_admin", Name = "Admin" };
+            db.Roles.Add(role);
+        }
+
+        foreach (var permission in AdminPermissions)
+        {
+            var hasClaim = await db.RoleClaims.AnyAsync(rc =>
+                rc.RoleId == "r_admin" && rc.ClaimType == Permissions.ClaimType && rc.ClaimValue == permission, ct);
+
+            if (!hasClaim)
+                db.RoleClaims.Add(new RoleClaim { RoleId = "r_admin", ClaimType = Permissions.ClaimType, ClaimValue = permission });
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
+
+    private static async Task SeedDemoDataAsync(AppDbContext db, string demoUserPassword, CancellationToken ct)
     {
         var existingEmployeesUsers = await db.Users
             .Where(u => u.Id >= 1 && u.Id <= 4)
@@ -91,33 +135,14 @@ public static class DatabaseBootstrapper
             };
 
             foreach (var u in users)
-                u.PasswordHash = hasher.HashPassword(u, "P@ssw0rd!");
+                u.PasswordHash = hasher.HashPassword(u, demoUserPassword);
 
             db.Users.AddRange(users);
-        }
-
-        var role = await db.Roles.AsNoTracking().FirstOrDefaultAsync(r => r.Id == "r_admin", ct);
-        if (role is null)
-        {
-            role = new Role { Id = "r_admin", Name = "Admin" };
-            db.Roles.Add(role);
         }
 
         var hasUserRole = await db.UserRoles.AnyAsync(ur => ur.UserId == 1 && ur.RoleId == "r_admin", ct);
         if (!hasUserRole)
             db.UserRoles.Add(new UserRole { UserId = 1, RoleId = "r_admin" });
-
-        if (!await db.RoleClaims.AnyAsync(rc =>
-            rc.RoleId == "r_admin" && rc.ClaimType == Permissions.ClaimType && rc.ClaimValue == Permissions.Bookings.Read, ct))
-        {
-            db.RoleClaims.Add(new RoleClaim { RoleId = "r_admin", ClaimType = Permissions.ClaimType, ClaimValue = Permissions.Bookings.Read });
-        }
-
-        if (!await db.RoleClaims.AnyAsync(rc =>
-            rc.RoleId == "r_admin" && rc.ClaimType == Permissions.ClaimType && rc.ClaimValue == Permissions.Bookings.Create, ct))
-        {
-            db.RoleClaims.Add(new RoleClaim { RoleId = "r_admin", ClaimType = Permissions.ClaimType, ClaimValue = Permissions.Bookings.Create });
-        }
 
         if (!await db.Offices.AnyAsync(ct))
         {

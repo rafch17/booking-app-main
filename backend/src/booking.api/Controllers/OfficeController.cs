@@ -2,18 +2,20 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using booking.core.Constants;
 using booking.core.DTOs;
-using booking.infrastructure.Services;
+using booking.core.Interfaces;
 
 namespace booking.api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class OfficeController : ControllerBase
 {
     private readonly IOfficeService _svc;
     public OfficeController(IOfficeService svc) => _svc = svc;
 
     [HttpGet]
+    [Authorize(Policy = "Office.Read")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         var (ok, data, code) = await _svc.GetAllAsync(ct);
@@ -21,6 +23,7 @@ public class OfficeController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Policy = "Office.Read")]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
         var (ok, data, code) = await _svc.GetByIdAsync(id, ct);
@@ -29,6 +32,7 @@ public class OfficeController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "Office.Create")]
     public async Task<IActionResult> Create([FromBody] OfficeUpsertDto body, CancellationToken ct)
     {
         var (ok, id, code, message) = await _svc.CreateAsync(body, ct);
@@ -37,6 +41,7 @@ public class OfficeController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "Office.Update")]
     public async Task<IActionResult> Update(int id, [FromBody] OfficeUpsertDto body, CancellationToken ct)
     {
         var (ok, code, message) = await _svc.UpdateAsync(id, body, ct);
@@ -46,6 +51,7 @@ public class OfficeController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "Office.Delete")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var (ok, code, message) = await _svc.DeleteAsync(id, ct);
