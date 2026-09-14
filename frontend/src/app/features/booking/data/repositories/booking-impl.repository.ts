@@ -1,18 +1,17 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
+import { environment } from '../../../../../environments/environment';
 import { ResponseModel } from '../../../auth/domain/models/response.model';
 import Booking from '../../domain/models/booking.model';
 import { BookingRepository } from '../../domain/repositories/booking.repository';
-import { OfficeRepositoryMapper } from '../mappers/office.repository.mapper';
 import { BookingRow } from '../../domain/models/booking-row.model';
 
 @Injectable({ providedIn: 'root' })
 export class BookingImplRepository extends BookingRepository {
   http: HttpClient = inject(HttpClient);
-  mapper = new OfficeRepositoryMapper();
 
-  baseUrl: string = 'http://localhost:5170/api';
+  baseUrl: string = environment.apiUrl;
   relativeUrl: string = '/Office';
 
   override saveBooking(booking: Booking): Observable<Booking> {

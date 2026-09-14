@@ -5,11 +5,20 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
 
 ## Prerequisites
 
-- Node.js
+- Node.js >= 18.19 (required by Angular CLI 19; this machine's active `node` was found to
+  be v16.20.2 via nvm — run `nvm use 20.20.2` or similar before `ng serve`/`ng build`)
 - npm / yarn / pnpm
 - Git
 
 Check the backend `package.json` for exact engine versions.
+
+## Environment / API URL
+
+The backend base URL lives in `src/environments/environment.ts` (production default,
+`apiUrl: '/api'`) and `src/environments/environment.development.ts`
+(`apiUrl: 'http://localhost:5170/api'`, used automatically by `ng serve` / the
+`development` build configuration). Adjust `environment.ts` before deploying if the
+frontend and backend aren't served from the same origin.
 
 ## Development server
 

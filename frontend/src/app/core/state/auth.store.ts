@@ -57,4 +57,8 @@ export class AuthStore {
   getEmployeeId(): number | null {
     return this._user.value?.employeeId ?? null;
   }
+
+  getToken(): string | null {
+    return this._authData.value?.data.token ?? null;
+  }
 }

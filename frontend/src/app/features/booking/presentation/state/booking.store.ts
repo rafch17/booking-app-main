@@ -116,13 +116,7 @@ export class BookingStore {
     const wPlaces = await firstValueFrom(
       this.getWorkingPlacesUseCase.execute()
     );
-    console.log('wPlaces', wPlaces);
     this.setWorkingPlaces(wPlaces);
-
-    //TESTING
-    // if (wPlaces.length > 0) {
-    //   this.setSelectedWorkingPlaceId(wPlaces[0].id);
-    // }
   }
 
   async loadServices(officeId: number) {
@@ -132,11 +126,6 @@ export class BookingStore {
         this.getServicesUseCase.execute(officeId)
       );
       this.setServices(services);
-
-      // TESTING
-      // if (services.length > 0) {
-      //   this.setServiceId(services[0].id);
-      // }
     } catch {
       this.setServices([]);
     } finally {

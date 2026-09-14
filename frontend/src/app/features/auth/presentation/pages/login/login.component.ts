@@ -46,6 +46,7 @@ export class LoginComponent {
   readonly loginUseCase = inject(LoginUseCase);
 
   isLoading = signal(false);
+  errorMessage = signal<string | null>(null);
   private router = inject(Router);
   private authStore = inject(AuthStore);
 
@@ -55,18 +56,18 @@ export class LoginComponent {
       const password = this.loginForm.get('password')?.value;
       try {
         this.isLoading.set(true);
+        this.errorMessage.set(null);
         const user = await firstValueFrom(
           this.loginUseCase.execute({
             username: username!,
             password: password!,
           })
         );
-        console.log('Login successful:', user);
         this.loginForm.reset();
         this.authStore.setSession(user);
         this.router.navigate(['/booking']);
       } catch (error) {
-        console.error('Login failed:', error);
+        this.errorMessage.set('Invalid username or password.');
       } finally {
         this.isLoading.set(false);
       }

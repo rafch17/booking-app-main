@@ -15,10 +15,7 @@ export const routes: Routes = [
   },
   {
     path: 'booking',
+    canActivate: [AuthGuard],
     children: bookingRoutes
   }
-  // {
-  //   path: '',
-  //   canActivate: [AuthGuard],
-  // }
 ];

@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 import { AuthStore } from '../state/auth.store';
-import { ActivatedRouteSnapshot, CanActivate, GuardResult, MaybeAsync, Router, RouterStateSnapshot } from '@angular/router';
+import { CanActivate, Router, UrlTree } from '@angular/router';
 import UserRoleModel from '../../features/auth/domain/models/role.model';
-import { map } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class RoleGuard implements CanActivate {
@@ -11,12 +10,12 @@ export class RoleGuard implements CanActivate {
     private authStore: AuthStore,
     private router: Router
   ) { }
-  canActivate(): boolean {
+
+  canActivate(): boolean | UrlTree {
     const role = this.authStore.getCurrentRole();
     if (role === UserRoleModel.ADMIN) return true;
 
-    this.router.navigate(['/not-authorized']);
-    return false;
+    return this.router.createUrlTree(['/not-authorized']);
   }
 
 }

@@ -29,11 +29,14 @@
           }
         </mat-form-field>
       </div>
+      @if (errorMessage()) {
+        <p class="login-error">{{ errorMessage() }}</p>
+      }
       <button
         mat-flat-button
         color="primary"
         (click)="onSubmit()"
-        [disabled]="loginForm.invalid"
+        [disabled]="loginForm.invalid || isLoading()"
       >
         Login
       </button>

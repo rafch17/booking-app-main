@@ -31,3 +31,9 @@
   flex-direction: column;
   gap: 5px;
 }
+
+.login-error {
+  color: var(--mat-sys-error, #b3261e);
+  font-size: 0.875rem;
+  margin: 0;
+}

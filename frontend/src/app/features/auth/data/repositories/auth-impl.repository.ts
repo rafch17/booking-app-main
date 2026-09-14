@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 
+import { environment } from '../../../../../environments/environment';
 import { AuthStore } from '../../../../core/state/auth.store';
 import { AuthModel } from '../../domain/models/auth.model';
 import UserRoleModel from '../../domain/models/role.model';
@@ -14,7 +15,7 @@ export class AuthImplRepository extends AuthRepository {
   private http = inject(HttpClient);
   private authStore = inject(AuthStore);
 
-  private baseUrl = 'http://localhost:5170/api';
+  private baseUrl = environment.apiUrl;
   private relativeUrl = '/Auth/login';
 
   override login(params: {
