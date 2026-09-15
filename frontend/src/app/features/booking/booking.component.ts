@@ -18,10 +18,24 @@ import { SaveBookingUseCase } from './domain/use-cases/save-booking.usecase';
 import { BookingRepository } from './domain/repositories/booking.repository';
 import { BookingImplRepository } from './data/repositories/booking-impl.repository';
 import { GetBookingsByServiceUseCase } from './domain/use-cases/get-bookings-by-service.usecase';
+import { AuthStore } from '../../core/state/auth.store';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-booking',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, MatToolbarModule, MatButtonModule, MatIconModule],
+  template: `
+    <mat-toolbar color="primary">
+      <span>Booking App</span>
+      <span style="flex: 1"></span>
+      <button mat-icon-button (click)="logout()" matTooltip="Cerrar sesión">
+        <mat-icon>logout</mat-icon>
+      </button>
+    </mat-toolbar>
+    <router-outlet></router-outlet>
+  `,
   providers: [
     {
       provide: OfficeRepository,
@@ -41,14 +55,19 @@ import { GetBookingsByServiceUseCase } from './domain/use-cases/get-bookings-by-
     GetBookingsByServiceUseCase,
     BookingStore,
   ],
-  template: `<router-outlet></router-outlet>`,
 })
 export class BookingComponent implements OnInit, OnDestroy {
   bookingStore = inject(BookingStore);
+  private authStore = inject(AuthStore);
   private suscriptions: Subscription[] = [];
   private _snackbar = inject(MatSnackBar);
   route = inject(ActivatedRoute);
   router = inject(Router);
+
+  logout(): void {
+    this.authStore.clearSession();
+    this.router.navigate(['/auth/login']);
+  }
   ngOnInit(): void {
     this.bookingStore.onLoad();
     const wkplaceSub = this.bookingStore.workingPlaces$
